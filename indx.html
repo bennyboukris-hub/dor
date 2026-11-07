@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>תפוס את הביצים!</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to bottom, #1a1a2e, #16213e);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            color: #fff;
+        }
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 450px;
+            height: 650px;
+            background: linear-gradient(to bottom, #87CEEB, #E0F6FF);
+            overflow: hidden;
+            border-bottom: 4px solid #333;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        #ui {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 20px;
+            font-weight: bold;
+            color: #222;
+            z-index: 10;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+        }
+        /* עיצוב האיש */
+        #basket {
+            position: absolute;
+            bottom: 20px;
+            left: 187px;
+            width: 70px;
+            height: 60px;
+            z-index: 5;
+        }
+        .body-part {
+            position: absolute;
+        }
+        /* ראש */
+        .head {
+            width: 26px;
+            height: 26px;
+            background: #ffccaa;
+            border-radius: 50%;
+            top: 0;
+            left: 22px;
+            border: 2px solid #b87a4d;
+        }
+        /* גוף */
+        .torso {
+            width: 36px;
+            height: 28px;
+            background: #e74c3c;
+            border-radius: 8px 8px 4px 4px;
+            top: 24px;
+            left: 17px;
+            border: 2px solid #c0392b;
+        }
+        /* ידיים תופסות / סל קטן */
+        .arms {
+            width: 50px;
+            height: 14px;
+            background: #f1c40f;
+            border-radius: 10px;
+            top: 28px;
+            left: 10px;
+            border: 2px solid #d4ac0d;
+        }
+        .item {
+            position: absolute;
+            font-size: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            z-index: 4;
+        }
+        #start-screen, #game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: #f1c40f;
+            text-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
+        }
+        p {
+            font-size: 16px;
+            margin-bottom: 25px;
+            color: #ddd;
+        }
+        .btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 14px 35px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+            transition: 0.2s;
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+        #controls-hint {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #aaa;
+        }
+        #mobile-controls {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 450px;
+            padding: 12px;
+            background: #16213e;
+        }
+        .ctrl-btn {
+            background: #0f3460;
+            color: white;
+            border: 2px solid #e94560;
+            font-size: 24px;
+            width: 48%;
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="ui">
+            <div id="score">ניקוד: 0</div>
+            <div id="lives">חיים: ❤️❤️❤️</div>
+        </div>
+
+        <!-- דמות האיש -->
+        <div id="basket">
+            <div class="body-part head"></div>
+            <div class="body-part torso"></div>
+            <div class="body-part arms"></div>
+        </div>
+
+        <div id="start-screen">
+            <h1>תפוס את הביצים!</h1>
+            <p>הזז את האיש כדי לתפוס את הביצים היורדות ישירות אליך. היזהר מהפצצות!</p>
+            <button class="btn" onclick="startGame()">התחל משחק</button>
+            <div id="controls-hint">השתמש בחיצים במקלדת או בגרירה במסך</div>
+        </div>
+
+        <div id="game-over-screen" style="display: none;">
+            <h1>המשחק נגמר!</h1>
+            <p id="final-score">הניקוד שלך: 0</p>
+            <p id="high-score">שיא אישי: 0</p>
+            <button class="btn" onclick="startGame()">שחק שוב</button>
+        </div>
+    </div>
+
+    <div id="mobile-controls">
+        <button class="ctrl-btn" id="left-btn">◀ שמאלה</button>
+        <button class="ctrl-btn" id="right-btn">ימינה ▶</button>
+    </div>
+
+    <script>
+        const container = document.getElementById('game-container');
+        const basket = document.getElementById('basket');
+        const scoreDisplay = document.getElementById('score');
+        const livesDisplay = document.getElementById('lives');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const finalScoreText = document.getElementById('final-score');
+        const highScoreText = document.getElementById('high-score');
+
+        let score = 0;
+        let lives = 3;
+        let gameInterval = null;
+        let itemSpawner = null;
+        let basketX = 187;
+        let gameSpeed = 2.5;
+        let items = [];
+        let isPlaying = false;
+        let eggsCaught = 0;
+        
+        let highScore = localStorage.getItem('eggGameHighScore') || 0;
+
+        const synth = new Tone.Synth().toDestination();
+        const noiseSynth = new Tone.NoiseSynth({
+            noise: { type: 'white' },
+            envelope: { attack: 0.005, decay: 0.1, sustain: 0 }
+        }).toDestination();
+
+        const keys = { ArrowLeft: false, ArrowRight: false, KeyA: false, KeyD: false };
+        let touchX = null;
+
+        window.addEventListener('keydown', (e) => { if (keys.hasOwnProperty(e.code)) keys[e.code] = true; });
+        window.addEventListener('keyup', (e) => { if (keys.hasOwnProperty(e.code)) keys[e.code] = false; });
+
+        container.addEventListener('touchmove', (e) => {
+            let rect = container.getBoundingClientRect();
+            touchX = e.touches[0].clientX - rect.left - 35;
+        });
+
+        document.getElementById('left-btn').addEventListener('touchstart', () => keys.ArrowLeft = true);
+        document.getElementById('left-btn').addEventListener('touchend', () => keys.ArrowLeft = false);
+        document.getElementById('right-btn').addEventListener('touchstart', () => keys.ArrowRight = true);
+        document.getElementById('right-btn').addEventListener('touchend', () => keys.ArrowRight = false);
+
+        function startGame() {
+            Tone.start();
+            startScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            
+            items.forEach(i => i.element.remove());
+            items = [];
+            score = 0;
+            lives = 3;
+            gameSpeed = 2.5;
+            eggsCaught = 0;
+            basketX = container.clientWidth / 2 - 35;
+            isPlaying = true;
+
+            updateUI();
+
+            if (gameInterval) clearInterval(gameInterval);
+            if (itemSpawner) clearInterval(itemSpawner);
+
+            gameInterval = setInterval(updateGame, 20);
+            itemSpawner = setInterval(spawnItem, 1200);
+        }
+
+        function spawnItem() {
+            if (!isPlaying) return;
+
+            // הביצים נופלות בדיוק אל עבר מיקום האיש (עם סטייה קטנה לנוחות המשחק)
+            let randomOffset = (Math.random() - 0.5) * 80;
+            let startX = Math.max(10, Math.min(container.clientWidth - 50, basketX + 35 + randomOffset));
+            
+            let rand = Math.random();
+            let type = 'egg';
+            let emoji = '🥚';
+            let points = 10;
+
+            if (rand < 0.18) {
+                type = 'bomb';
+                emoji = '💣';
+            } else if (rand < 0.35) {
+                type = 'mud';
+                emoji = '💩';
+                points = -15;
+            }
+
+            const el = document.createElement('div');
+            el.className = 'item';
+            el.innerText = emoji;
+            el.style.left = startX + 'px';
+            el.style.top = '0px';
+            container.appendChild(el);
+
+            items.push({ element: el, x: startX, y: 0, type: type, points: points });
+        }
+
+        function updateGame() {
+            if (!isPlaying) return;
+
+            // תנועת השחקן
+            if (keys.ArrowLeft || keys.KeyA) basketX -= 7;
+            if (keys.ArrowRight || keys.KeyD) basketX += 7;
+            if (touchX !== null) {
+                basketX = touchX;
+                touchX = null;
+            }
+
+            basketX = Math.max(0, Math.min(container.clientWidth - 70, basketX));
+            basket.style.left = basketX + 'px';
+
+            // עדכון מיקום חפצים
+            for (let i = items.length - 1; i >= 0; i--) {
+                let item = items[i];
+                item.y += gameSpeed;
+                item.element.style.top = item.y + 'px';
+
+                // בדיקת תפיסה
+                if (item.y >= 560 && item.y <= 610 && item.x + 40 >= basketX && item.x <= basketX + 70) {
+                    handleCollision(item);
+                    item.element.remove();
+                    items.splice(i, 1);
+                    continue;
+                }
+
+                // פספוס תחתית המסך
+                if (item.y > container.clientHeight) {
+                    if (item.type === 'egg') {
+                        lives--;
+                        synth.triggerAttackRelease('C2', '8n');
+                        updateUI();
+                        if (lives <= 0) gameOver();
+                    }
+                    item.element.remove();
+                    items.splice(i, 1);
+                }
+            }
+        }
+
+        function handleCollision(item) {
+            if (item.type === 'egg') {
+                score += 10;
+                synth.triggerAttackRelease('G4', '16n');
+                eggsCaught++;
+                
+                // עליית מהירות כל 5 ביצים שנתפסו
+                if (eggsCaught % 5 === 0) {
+                    gameSpeed += 0.5;
+                }
+            } else if (item.type === 'mud') {
+                score = Math.max(0, score + 15);
+                noiseSynth.triggerAttackRelease('8n');
+            } else if (item.type === 'bomb') {
+                lives--;
+                noiseSynth.triggerAttackRelease('4n');
+                if (lives <= 0) gameOver();
+            }
+            updateUI();
+        }
+
+        function updateUI() {
+            scoreDisplay.innerText = `ניקוד: ${score}`;
+            livesDisplay.innerText = `חיים: ${'❤️'.repeat(Math.max(0, lives))}`;
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            clearInterval(gameInterval);
+            clearInterval(itemSpawner);
+
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('eggGameHighScore', highScore);
+            }
+
+            finalScoreText.innerText = `הניקוד שלך: ${score}`;
+            highScoreText.innerText = `שיא אישי: ${highScore}`;
+            gameOverScreen.style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
